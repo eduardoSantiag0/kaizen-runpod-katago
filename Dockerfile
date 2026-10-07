@@ -61,8 +61,24 @@ COPY --from=builder \
 # Worker RunPod
 COPY handler.py .
 
-# Config e modelo ficam dentro da imagem
+# Config ficam dentro da imagem
 COPY config/analysis.cfg ./config/analysis.cfg
-COPY models/model.bin.gz ./models/model.bin.gz
+
+# b18c384nbt-humanv0.bin.gz
+COPY models/model.bin.gz ./models/model.bin.gz 
 
 CMD ["python3", "-u", "handler.py"]
+
+# humanSLProfile = rank_12k
+# {
+#   "id": "game-123-move-48",
+#   "moves": [...],
+#   "includePolicy": true,
+
+#   "overrideSettings": {
+#     "humanSLProfile": "rank_12k"
+#   }
+# }
+
+# docker build -t kaizen-katago-worker .
+# ./katago gtp -config gtp_human5k_example.cfg -model your_favorite_normal_model_for_katago.bin.gz -human-model b18c384nbt-humanv0.bin.gz
