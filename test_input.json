@@ -1,0 +1,29 @@
+{
+  "input": {
+    "id": "kaizen-test-001",
+    "boardXSize": 19,
+    "boardYSize": 19,
+    "rules": "japanese",
+    "komi": 6.5,
+    "moves": [
+      ["B", "Q16"],
+      ["W", "D4"],
+      ["B", "D16"],
+      ["W", "Q4"],
+      ["B", "R14"],
+      ["W", "C6"],
+      ["B", "C14"],
+      ["W", "R6"],
+      ["B", "F17"],
+      ["W", "F3"]
+    ],
+    "analyzeTurns": [10],
+    "maxVisits": 100,
+    "includePolicy": true,
+    "includeOwnership": true,
+    "overrideSettings": {
+      "humanSLProfile": "rank_12k_8k",
+      "ignorePreRootHistory": false
+    }
+  }
+}
