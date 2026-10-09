@@ -69,11 +69,4 @@ COPY models/model.bin.gz ./models/model.bin.gz
 
 CMD ["python3", "-u", "handler.py"]
 
-# docker build -t kaizen-katago-worker .
-
 # ./katago gtp -config gtp_human5k_example.cfg -model your_favorite_normal_model_for_katago.bin.gz -human-model b18c384nbt-humanv0.bin.gz
-
-# docker run --rm -it `
-#   --gpus all `
-#   --mount type=bind,source="$($PWD.Path)\test_input.json",target=/app/test_input.json,readonly `
-#   meukatago
