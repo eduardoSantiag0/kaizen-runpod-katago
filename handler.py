@@ -281,14 +281,16 @@ async def handler(event):
         job_logger.info("Análise concluída com %d pontos críticos.", len(results))
 
         runpod_response = {
-            "chatId": analysis_dto.chatId,
-            "correlationId": analysis_dto.correlationId,
             "id": katago_query.id,
-            "status": "COMPLETED",
             "output": {
-                "gameId": analysis_dto.correlationId,
-                "totalMoves": len(katago_query.moves),
-                "criticalPoints": results,
+                "chatId": analysis_dto.chatId,
+                "correlationId": analysis_dto.correlationId,
+                "status": "COMPLETED",
+                "output": {
+                    "gameId": analysis_dto.correlationId,
+                    "totalMoves": len(katago_query.moves),
+                    "criticalPoints": results,
+                },
             },
         }
 
@@ -300,11 +302,13 @@ async def handler(event):
         job_logger.error("Falha ao processar análise: %s", error, exc_info=True)
 
         runpod_response = {
-            "chatId": analysis_dto.chatId,
-            "correlationId": analysis_dto.correlationId,
             "id": katago_query.id,
-            "status": "FAILED",
-            "output": None,
+            "output": {
+                "chatId": analysis_dto.chatId,
+                "correlationId": analysis_dto.correlationId,
+                "status": "FAILED",
+                "output": None,
+            },
         }
 
         sendRunPodResponseAsync(runpod_response, job_logger)
