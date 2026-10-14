@@ -282,6 +282,7 @@ async def handler(event):
 
         runpod_response = {
             "chatId": analysis_dto.chatId,
+            "correlationId": analysis_dto.correlationId,
             "id": katago_query.id,
             "status": "COMPLETED",
             "output": {
@@ -300,6 +301,7 @@ async def handler(event):
 
         runpod_response = {
             "chatId": analysis_dto.chatId,
+            "correlationId": analysis_dto.correlationId,
             "id": katago_query.id,
             "status": "FAILED",
             "output": None,
