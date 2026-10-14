@@ -1,0 +1,18 @@
+services:
+  katago:
+    build: .
+    container_name: kaizen-katago
+    gpus: all
+    ports:
+      - "8970:8970"
+    command:
+      - python3
+      - -u
+      - handler.py
+      - --rp_serve_api
+      - --rp_api_host
+      - "0.0.0.0"
+      - --rp_api_port
+      - "8970"
+    stdin_open: true
+    tty: true

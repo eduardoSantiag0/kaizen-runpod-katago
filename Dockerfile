@@ -60,12 +60,13 @@ COPY --from=builder \
 
 # Worker RunPod
 COPY handler.py .
+COPY events.py .
 
 # Config ficam dentro da imagem
 COPY config/analysis.cfg ./config/analysis.cfg
 
-# b18c384nbt-humanv0.bin.gz
-COPY models/model.bin.gz ./models/model.bin.gz 
+COPY models/strong.bin.gz ./models/strong.bin.gz
+COPY models/human.bin.gz ./models/human.bin.gz
 
 CMD ["python3", "-u", "handler.py"]
 
