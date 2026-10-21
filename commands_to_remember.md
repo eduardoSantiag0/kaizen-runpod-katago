@@ -17,5 +17,4 @@ Testar com endpoint
     --name kaizen-katago `
     -p 8970:8000 `
     meukatago `
-    python3 -u handler.py --rp_serve_api --rp_api_port 8000
-
+    python3 -u handler.py --rp_serve_api --rp_api_port 8000 

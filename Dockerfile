@@ -45,13 +45,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# RunPod SDK isolado
-RUN python3 -m venv /venv \
-    && /venv/bin/pip install --no-cache-dir runpod
-
 ENV PATH="/venv/bin:$PATH"
 
 WORKDIR /app
+
+COPY requirements-status-api.txt .
+
+# RunPod SDK isolado
+RUN python3 -m venv /venv \
+    && /venv/bin/pip install --no-cache-dir runpod \
+    && /venv/bin/pip install --no-cache-dir -r requirements-status-api.txt
 
 # KataGo
 COPY --from=builder \
@@ -61,6 +64,9 @@ COPY --from=builder \
 # Worker RunPod
 COPY handler.py .
 COPY events.py .
+
+# API de status/cancelamento de jobs
+COPY status_api.py .
 
 # Config ficam dentro da imagem
 COPY config/analysis.cfg ./config/analysis.cfg

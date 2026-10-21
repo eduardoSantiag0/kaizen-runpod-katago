@@ -16,3 +16,24 @@ services:
       - "8970"
     stdin_open: true
     tty: true
+
+  status-api:
+    build: .
+    container_name: kaizen-status-api
+    ports:
+      - "8971:8971"
+    environment:
+      RUNPOD_API_KEY: "${RUNPOD_API_KEY}"
+      RUNPOD_ENDPOINT_ID: "${RUNPOD_ENDPOINT_ID}"
+      # Aponta para o container local do katago (via rede do compose) em vez
+      # da API de nuvem do RunPod. Remova/comente para testar contra a nuvem.
+      RUNPOD_LOCAL_URL: "http://katago:8970"
+    depends_on:
+      - katago
+    command:
+      - uvicorn
+      - status_api:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8971"
