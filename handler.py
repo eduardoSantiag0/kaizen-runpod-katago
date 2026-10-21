@@ -14,19 +14,23 @@ from events import AnalysisCreatedEvent
 
 CALLBACK_URL = os.environ.get("KAIZAN_CALLBACK_URL", "http://host.docker.internal:8080/kaizan/api/v1/katago")
 
-KATAGO_PROCESS = subprocess.Popen(
-    [
-        "katago",
-        "analysis",
-        "-config", "/app/config/analysis.cfg",
-        "-model", "/app/models/strong.bin.gz",
-        "-human-model", "/app/models/human.bin.gz",
-    ],
-    stdin=subprocess.PIPE,
-    stdout=subprocess.PIPE,
-    text=True,
-    bufsize=1,
-)
+def startKatagoProcess():
+    return subprocess.Popen(
+        [
+            "katago",
+            "analysis",
+            "-config", "/app/config/analysis.cfg",
+            "-model", "/app/models/strong.bin.gz",
+            "-human-model", "/app/models/human.bin.gz",
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+
+
+KATAGO_PROCESS = startKatagoProcess()
 
 LOCK = threading.Lock()
 
@@ -66,6 +70,12 @@ def sendRunPodResponse(runpod_response, job_logger):
     try:
         urllib.request.urlopen(request, timeout=10)
         job_logger.info("Callback enviado para %s", CALLBACK_URL)
+    except urllib.error.HTTPError as error:
+        error_body = error.read().decode("utf-8", errors="replace")
+        job_logger.error(
+            "Falha ao enviar callback para %s: HTTP %s - %s\nCorpo enviado: %s\nCorpo da resposta: %s",
+            CALLBACK_URL, error.code, error.reason, body.decode("utf-8"), error_body,
+        )
     except urllib.error.URLError as error:
         job_logger.error("Falha ao enviar callback para %s: %s", CALLBACK_URL, error, exc_info=True)
 
@@ -76,6 +86,8 @@ def sendRunPodResponseAsync(runpod_response, job_logger):
 
 
 def queryKatago(query):
+    global KATAGO_PROCESS
+
     payload = query.toQueryDict()
 
     if "analyzeTurns" in payload:
@@ -87,7 +99,10 @@ def queryKatago(query):
         return []
 
     if KATAGO_PROCESS.poll() != None:
-        raise RuntimeError("KataGo encerrou")
+        # O processo morreu em uma requisição anterior: reinicia para que o
+        # worker continue aceitando e processando novas requisições.
+        KATAGO_PROCESS = startKatagoProcess()
+        raise RuntimeError("KataGo encerrou; processo reiniciado")
 
     KATAGO_PROCESS.stdin.write(json.dumps(payload) + "\n")
     KATAGO_PROCESS.stdin.flush()
@@ -98,7 +113,10 @@ def queryKatago(query):
         line = KATAGO_PROCESS.stdout.readline()
 
         if line == "":
-            raise RuntimeError("KataGo fechou stdout")
+            # stdout fechado (processo morreu durante esta requisição):
+            # reinicia para que futuras requisições continuem sendo atendidas.
+            KATAGO_PROCESS = startKatagoProcess()
+            raise RuntimeError("KataGo fechou stdout; processo reiniciado")
 
         response = json.loads(line)
 
