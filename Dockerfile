@@ -28,6 +28,7 @@ RUN cmake . \
     -DUSE_BACKEND=CUDA \
     -DCMAKE_BUILD_TYPE=Release \
     -DNO_GIT_REVISION=1 \
+    -DCMAKE_CUDA_ARCHITECTURES=all \
     && make -j"$(nproc)"
 
 
@@ -61,18 +62,17 @@ COPY --from=builder \
     /build/KataGo/cpp/katago \
     /usr/local/bin/katago
 
+COPY config/analysis.cfg ./config/analysis.cfg
+
+COPY models/strong.bin.gz ./models/strong.bin.gz
+COPY models/human.bin.gz ./models/human.bin.gz
+
 # Worker RunPod
 COPY handler.py .
 COPY events.py .
 
 # API de status/cancelamento de jobs
 COPY status_api.py .
-
-# Config ficam dentro da imagem
-COPY config/analysis.cfg ./config/analysis.cfg
-
-COPY models/strong.bin.gz ./models/strong.bin.gz
-COPY models/human.bin.gz ./models/human.bin.gz
 
 CMD ["python3", "-u", "handler.py"]
 

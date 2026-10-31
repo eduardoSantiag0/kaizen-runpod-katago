@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 import threading
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -13,6 +14,8 @@ import runpod
 from events import AnalysisCreatedEvent
 
 CALLBACK_URL = os.environ.get("KAIZAN_CALLBACK_URL", "http://host.docker.internal:8080/kaizan/api/v1/katago")
+CALLBACK_MAX_ATTEMPTS = 3
+CALLBACK_RETRY_BACKOFF_SECONDS = 2
 
 def startKatagoProcess():
     return subprocess.Popen(
@@ -60,24 +63,48 @@ LOG.info("Logger initialized. Ready to process jobs.")
 def sendRunPodResponse(runpod_response, job_logger):
     body = json.dumps(runpod_response).encode("utf-8")
 
-    request = urllib.request.Request(
-        CALLBACK_URL,
-        data=body,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
-    try:
-        urllib.request.urlopen(request, timeout=10)
-        job_logger.info("Callback enviado para %s", CALLBACK_URL)
-    except urllib.error.HTTPError as error:
-        error_body = error.read().decode("utf-8", errors="replace")
-        job_logger.error(
-            "Falha ao enviar callback para %s: HTTP %s - %s\nCorpo enviado: %s\nCorpo da resposta: %s",
-            CALLBACK_URL, error.code, error.reason, body.decode("utf-8"), error_body,
+    attempt = 1
+    while attempt <= CALLBACK_MAX_ATTEMPTS:
+        request = urllib.request.Request(
+            CALLBACK_URL,
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
         )
-    except urllib.error.URLError as error:
-        job_logger.error("Falha ao enviar callback para %s: %s", CALLBACK_URL, error, exc_info=True)
+
+        try:
+            urllib.request.urlopen(request, timeout=10)
+            job_logger.info("Callback enviado para %s (tentativa %d)", CALLBACK_URL, attempt)
+            return
+        except urllib.error.HTTPError as error:
+            error_body = error.read().decode("utf-8", errors="replace")
+
+            if error.code < 500:
+                job_logger.error(
+                    "Falha ao enviar callback para %s: HTTP %s - %s\nCorpo enviado: %s\nCorpo da resposta: %s",
+                    CALLBACK_URL, error.code, error.reason, body.decode("utf-8"), error_body,
+                )
+                return
+
+            job_logger.warning(
+                "Tentativa %d/%d falhou ao enviar callback para %s: HTTP %s - %s\nCorpo da resposta: %s",
+                attempt, CALLBACK_MAX_ATTEMPTS, CALLBACK_URL, error.code, error.reason, error_body,
+            )
+        except (urllib.error.URLError, TimeoutError) as error:
+            job_logger.warning(
+                "Tentativa %d/%d falhou ao enviar callback para %s: %s",
+                attempt, CALLBACK_MAX_ATTEMPTS, CALLBACK_URL, error,
+            )
+
+        if attempt == CALLBACK_MAX_ATTEMPTS:
+            job_logger.error(
+                "Falha ao enviar callback para %s apos %d tentativas. Corpo enviado: %s",
+                CALLBACK_URL, CALLBACK_MAX_ATTEMPTS, body.decode("utf-8"),
+            )
+            return
+
+        time.sleep(CALLBACK_RETRY_BACKOFF_SECONDS * attempt)
+        attempt = attempt + 1
 
 
 def sendRunPodResponseAsync(runpod_response, job_logger):
@@ -338,3 +365,6 @@ async def handler(event):
 
 
 runpod.serverless.start({"handler": handler})
+
+
+# docker compose up
