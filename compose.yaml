@@ -5,6 +5,8 @@ services:
     gpus: all
     ports:
       - "8970:8970"
+    environment:
+      RUNPOD_HEADER_SECRET: "${RUNPOD_HEADER_SECRET}"
     command:
       - python3
       - -u

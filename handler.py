@@ -16,6 +16,7 @@ from events import AnalysisCreatedEvent
 CALLBACK_URL = os.environ.get("KAIZAN_CALLBACK_URL", "http://host.docker.internal:8080/kaizan/api/v1/katago")
 CALLBACK_MAX_ATTEMPTS = 3
 CALLBACK_RETRY_BACKOFF_SECONDS = 2
+RUNPOD_HEADER_SECRET = os.environ.get("RUNPOD_HEADER_SECRET")
 
 def startKatagoProcess():
     return subprocess.Popen(
@@ -63,12 +64,16 @@ LOG.info("Logger initialized. Ready to process jobs.")
 def sendRunPodResponse(runpod_response, job_logger):
     body = json.dumps(runpod_response).encode("utf-8")
 
+    headers = {"Content-Type": "application/json"}
+    if RUNPOD_HEADER_SECRET:
+        headers["X-Kaizen-Secret"] = RUNPOD_HEADER_SECRET
+
     attempt = 1
     while attempt <= CALLBACK_MAX_ATTEMPTS:
         request = urllib.request.Request(
             CALLBACK_URL,
             data=body,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             method="POST",
         )
 
