@@ -69,6 +69,7 @@ COPY models/human.bin.gz ./models/human.bin.gz
 
 # Worker RunPod
 COPY handler.py .
+COPY katago_engine.py .
 COPY events.py .
 
 # API de status/cancelamento de jobs

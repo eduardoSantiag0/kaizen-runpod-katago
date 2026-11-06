@@ -1,1 +1,2 @@
 models/strong.bin.gz filter=lfs diff=lfs merge=lfs -text
+models/human.bin.gz filter=lfs diff=lfs merge=lfs -text

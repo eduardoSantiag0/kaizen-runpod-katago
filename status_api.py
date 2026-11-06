@@ -1,17 +1,32 @@
+import hmac
 import logging
 import os
+import re
 
 import httpx
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import Depends, FastAPI, HTTPException, Request
+from pydantic import BaseModel, field_validator
+
+CORRELATION_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
 
 RUNPOD_API_KEY = os.environ.get("RUNPOD_API_KEY")
 RUNPOD_ENDPOINT_ID = os.environ.get("RUNPOD_ENDPOINT_ID")
 RUNPOD_API_BASE_URL = os.environ.get("RUNPOD_API_BASE_URL", "https://api.runpod.ai/v2")
 
-# Para testar contra o container local (handler.py rodando com --rp_serve_api,
-# ex: http://localhost:8970): o servidor local expõe as rotas sem o prefixo
-# /v2/{endpoint_id} e sem exigir API key.
+
+RUNPOD_HEADER_SECRET = os.environ.get("RUNPOD_HEADER_SECRET")
+STATUS_API_SECRET_HEADER = "X-Kaizen-Secret"
+
+
+def requireSecret(request: Request):
+    if not RUNPOD_HEADER_SECRET:
+        raise HTTPException(status_code=500, detail="RUNPOD_HEADER_SECRET não configurada")
+
+    received = request.headers.get(STATUS_API_SECRET_HEADER)
+    if not received or not hmac.compare_digest(received, RUNPOD_HEADER_SECRET):
+        raise HTTPException(status_code=401, detail="Não autorizado")
+
+
 RUNPOD_LOCAL_URL = os.environ.get("RUNPOD_LOCAL_URL")
 
 # http://host.docker.internal:8080/kaizan/api/v1/katago
@@ -24,6 +39,13 @@ app = FastAPI(title="Kaizan RunPod Status API")
 
 class CancelRequest(BaseModel):
     correlationId: str
+
+    @field_validator("correlationId")
+    @classmethod
+    def validateCorrelationId(cls, value: str) -> str:
+        if not CORRELATION_ID_PATTERN.match(value):
+            raise ValueError("correlationId inválido")
+        return value
 
 
 def runpodHeaders():
@@ -67,8 +89,11 @@ def runpodEndpointUrl(*parts: str) -> str:
     return "/".join([f"{RUNPOD_API_BASE_URL}/{RUNPOD_ENDPOINT_ID}", *parts])
 
 
-@app.get("/status")
+@app.get("/status", dependencies=[Depends(requireSecret)])
 async def getStatus(correlationId: str):
+    if not CORRELATION_ID_PATTERN.match(correlationId):
+        raise HTTPException(status_code=422, detail="correlationId inválido")
+
     url = runpodEndpointUrl("status", correlationId)
 
     # O servidor local de teste (--rp_serve_api) só aceita POST em /status/{id}
@@ -78,7 +103,7 @@ async def getStatus(correlationId: str):
     return await callRunpod(http_method, url, "Job não encontrado")
 
 
-@app.post("/cancel")
+@app.post("/cancel", dependencies=[Depends(requireSecret)])
 async def cancelJob(request: CancelRequest):
     if RUNPOD_LOCAL_URL:
         raise HTTPException(

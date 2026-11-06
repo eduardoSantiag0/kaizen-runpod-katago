@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="520" viewBox="0 0 1400 520" role="img" aria-labelledby="title desc">
+  <title id="title">Kaizen RunPod KataGo Architecture</title>
+  <desc id="desc">Architecture diagram showing the Kaizen Companion Spring Boot application sending an analysis job to RunPod Serverless, which invokes a Python worker that talks to KataGo over JSON via stdin and stdout, then sends an HTTP callback with X-Kaizen-Secret back to Kaizen Companion. A FastAPI status API queries RunPod for status, cancel and health operations.</desc>
+  <defs>
+    <style>
+      .bg { fill: #0b1020; }
+      .panel { fill: #121933; stroke: #32406e; stroke-width: 2; }
+      .box { fill: #182347; stroke: #5f7ad9; stroke-width: 2; }
+      .box2 { fill: #1b2b54; stroke: #7aa2ff; stroke-width: 2; }
+      .title { font: 700 18px Inter, Arial, sans-serif; fill: #f5f7ff; }
+      .subtitle { font: 500 14px Inter, Arial, sans-serif; fill: #c9d2ff; }
+      .small { font: 500 13px Inter, Arial, sans-serif; fill: #dbe3ff; }
+      .label { font: 600 13px Inter, Arial, sans-serif; fill: #eaf0ff; }
+      .pill { fill: #223569; stroke: #6f8be8; stroke-width: 1.5; }
+      .pill-text { font: 600 12px Inter, Arial, sans-serif; fill: #f3f6ff; }
+      .arrow { stroke: #b7c7ff; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+      .arrow2 { stroke: #8fc7ff; stroke-width: 3; fill: none; marker-end: url(#arrowhead2); }
+      .arrowbi { stroke: #ffd580; stroke-width: 3; fill: none; marker-start: url(#arrowhead3); marker-end: url(#arrowhead3); }
+      .header { font: 700 28px Inter, Arial, sans-serif; fill: #ffffff; }
+      .subheader { font: 500 15px Inter, Arial, sans-serif; fill: #bfd0ff; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="#b7c7ff"/>
+    </marker>
+    <marker id="arrowhead2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="#8fc7ff"/>
+    </marker>
+    <marker id="arrowhead3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="#ffd580"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1400" height="520" rx="24"/>
+  <text x="60" y="60" class="header">Kaizen RunPod KataGo Architecture</text>
+  <text x="60" y="90" class="subheader">Static SVG version of the README diagram, suitable for GitHub without Mermaid.</text>
+
+  <rect class="panel" x="45" y="120" width="1310" height="340" rx="24"/>
+
+  <rect class="box" x="80" y="210" width="230" height="95" rx="18"/>
+  <text x="195" y="248" text-anchor="middle" class="title">Kaizen Companion</text>
+  <text x="195" y="272" text-anchor="middle" class="subtitle">Spring Boot</text>
+  <rect class="pill" x="123" y="286" width="144" height="28" rx="999"/>
+  <text x="195" y="305" text-anchor="middle" class="pill-text">client application</text>
+
+  <rect class="box2" x="420" y="210" width="230" height="95" rx="18"/>
+  <text x="535" y="248" text-anchor="middle" class="title">RunPod Serverless</text>
+  <text x="535" y="272" text-anchor="middle" class="subtitle">job orchestration</text>
+  <rect class="pill" x="478" y="286" width="115" height="28" rx="999"/>
+  <text x="535" y="305" text-anchor="middle" class="pill-text">GPU endpoint</text>
+
+  <rect class="box" x="760" y="210" width="230" height="95" rx="18"/>
+  <text x="875" y="248" text-anchor="middle" class="title">Python worker</text>
+  <text x="875" y="272" text-anchor="middle" class="subtitle">handler.py</text>
+  <rect class="pill" x="808" y="286" width="135" height="28" rx="999"/>
+  <text x="875" y="305" text-anchor="middle" class="pill-text">analysis logic</text>
+
+  <rect class="box2" x="1100" y="210" width="200" height="95" rx="18"/>
+  <text x="1200" y="248" text-anchor="middle" class="title">KataGo</text>
+  <text x="1200" y="272" text-anchor="middle" class="subtitle">CUDA GPU engine</text>
+  <rect class="pill" x="1138" y="286" width="124" height="28" rx="999"/>
+  <text x="1200" y="305" text-anchor="middle" class="pill-text">Go analysis</text>
+
+  <rect class="box" x="430" y="350" width="210" height="70" rx="18"/>
+  <text x="535" y="382" text-anchor="middle" class="title">FastAPI</text>
+  <text x="535" y="404" text-anchor="middle" class="subtitle">status_api.py</text>
+
+  <path class="arrow" d="M310 257 L420 257"/>
+  <text x="365" y="240" text-anchor="middle" class="label">Submit analysis job</text>
+
+  <path class="arrow" d="M650 257 L760 257"/>
+  <text x="705" y="240" text-anchor="middle" class="label">Invoke worker</text>
+
+  <path class="arrowbi" d="M990 257 L1100 257"/>
+  <text x="1045" y="232" text-anchor="middle" class="label">JSON over stdin / stdout</text>
+
+  <path class="arrow2" d="M760 195 C660 135, 420 135, 310 195"/>
+  <text x="535" y="130" text-anchor="middle" class="label">HTTP callback · X-Kaizen-Secret</text>
+
+  <path class="arrow" d="M535 350 L535 305"/>
+  <text x="615" y="334" class="label">Status / cancel / health</text>
+
+  <text x="80" y="445" class="small">Flow: Spring Boot submits a job → RunPod starts the Python worker → the worker talks to KataGo on the GPU → the result is posted back to the Kaizen Companion callback URL.</text>
+  <text x="80" y="470" class="small">The FastAPI service is a companion API used to query endpoint health and job state, and to cancel running jobs when needed.</text>
+</svg>

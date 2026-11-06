@@ -1,4 +1,5 @@
 .idea/
 .venv/
 __pycache__/
-.env/
+.env
+models/model.bin.gz

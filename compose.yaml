@@ -27,6 +27,7 @@ services:
     environment:
       RUNPOD_API_KEY: "${RUNPOD_API_KEY}"
       RUNPOD_ENDPOINT_ID: "${RUNPOD_ENDPOINT_ID}"
+      RUNPOD_HEADER_SECRET: "${RUNPOD_HEADER_SECRET}"
       # Aponta para o container local do katago (via rede do compose) em vez
       # da API de nuvem do RunPod. Remova/comente para testar contra a nuvem.
       RUNPOD_LOCAL_URL: "http://katago:8970"
