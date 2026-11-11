@@ -115,7 +115,7 @@ async def cancelJob(request: CancelRequest):
     return await callRunpod("POST", url, "Job não encontrado")
 
 
-@app.get("/health")
+@app.get("/health", dependencies=[Depends(requireSecret)])
 async def getHealth():
     if RUNPOD_LOCAL_URL:
         raise HTTPException(

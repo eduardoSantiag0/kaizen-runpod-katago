@@ -98,7 +98,7 @@ RUNPOD_API_KEY=
 RUNPOD_ENDPOINT_ID=
 ```
 
-**Security:** Do not commit `.env` or real credentials. The repository's current `.gitignore` does **not** explicitly ignore a `.env` *file*; add `.env` before storing secrets locally.
+**Security:** Do not commit `.env` or real credentials. The repository's `.gitignore` already ignores `.env`.
 
 ### 2. Start the services
 
@@ -137,10 +137,13 @@ The status proxy exposes:
 | `POST` | `/cancel` | Cancels a cloud RunPod job |
 | `GET` | `/health` | Retrieves cloud RunPod endpoint health |
 
+All three endpoints require the shared-secret header `X-Kaizen-Secret`, validated against `RUNPOD_HEADER_SECRET`.
+
 Example:
 
 ```bash
-curl "http://localhost:8971/status?correlationId=RUNPOD_JOB_ID"
+curl "http://localhost:8971/status?correlationId=RUNPOD_JOB_ID" \
+  -H "X-Kaizen-Secret: $RUNPOD_HEADER_SECRET"
 ```
 
 The `correlationId` query parameter in this API is passed **directly as the RunPod job ID**; it is not automatically mapped from the application's own correlation ID.
@@ -229,7 +232,7 @@ The FastAPI status proxy is **not** started by the production Dockerfile's defau
 - **Callback authentication:** `X-Kaizen-Secret` is a **shared-secret header, not an HMAC signature**. Set it on the worker and validate it on the receiving backend. Use HTTPS in production.
 - **No durable callback queue:** a returned RunPod job result does not, by itself, guarantee that the asynchronous callback was delivered. Keep job-status reconciliation or another recovery path for production use.
 - **Process isolation:** the worker uses a single persistent KataGo process guarded by a global lock. If that process exits, the handler restarts it and fails the interrupted request, rather than silently replaying it.
-- **Protect the status API:** it can invoke cancellation with your RunPod API key. Do not expose it publicly without authentication, network restrictions, or a trusted gateway.
+- **Protect the status API:** `/status`, `/cancel`, and `/health` all require the `X-Kaizen-Secret` header (validated against `RUNPOD_HEADER_SECRET`). It can still invoke cancellation with your RunPod API key, so keep that secret strong and also consider network restrictions or a trusted gateway in front of it.
 - **GPU configuration:** tune `config/analysis.cfg` (threads, batch size, cache) against actual GPU memory and throughput rather than assuming one setting is optimal everywhere.
 
 ## 🧯 Troubleshooting
