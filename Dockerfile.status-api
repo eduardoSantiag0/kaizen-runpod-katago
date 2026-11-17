@@ -1,0 +1,11 @@
+# Lightweight image for status_api.py alone — no CUDA/KataGo build
+FROM python:3.12-slim
+WORKDIR /app
+
+COPY requirements-status-api.txt .
+RUN pip install --no-cache-dir -r requirements-status-api.txt
+
+COPY status_api.py .
+
+EXPOSE 8971
+CMD ["uvicorn", "status_api:app", "--host", "0.0.0.0", "--port", "8971"]
