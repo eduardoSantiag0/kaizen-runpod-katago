@@ -2,7 +2,6 @@
 import json
 import logging
 import os
-import threading
 import time
 import urllib.error
 import urllib.request
@@ -90,11 +89,6 @@ def sendRunPodResponse(runpod_response, job_logger):
 
         time.sleep(CALLBACK_RETRY_BACKOFF_SECONDS * attempt)
         attempt = attempt + 1
-
-
-def sendRunPodResponseAsync(runpod_response, job_logger):
-    thread = threading.Thread(target=sendRunPodResponse, args=(runpod_response, job_logger), daemon=True)
-    thread.start()
 
 
 def firstRun(katago_query):
@@ -260,7 +254,11 @@ async def handler(event):
             },
         }
 
-        sendRunPodResponseAsync(runpod_response, job_logger)
+        # Síncrono de propósito: numa execução serverless, nada garante que o
+        # processo continua vivo depois que o handler retorna, então uma
+        # thread daemon "fire-and-forget" aqui podia perder o callback se o
+        # worker fosse encerrado antes dela terminar.
+        sendRunPodResponse(runpod_response, job_logger)
 
         return runpod_response
 
@@ -277,7 +275,7 @@ async def handler(event):
             },
         }
 
-        sendRunPodResponseAsync(runpod_response, job_logger)
+        sendRunPodResponse(runpod_response, job_logger)
 
         return {"error": str(error)}
 

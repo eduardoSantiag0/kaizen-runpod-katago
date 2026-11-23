@@ -1,6 +1,13 @@
 import json
+import select
 import subprocess
 import threading
+
+# Deadline for a single KataGo response line. stdout.readline() blocks
+# forever with no timeout of its own, so a hung-but-alive KataGo process
+# (poll() still None, no crash) would otherwise wedge this request — and
+# every later one too, since they all share the same process behind LOCK.
+KATAGO_RESPONSE_TIMEOUT_SECONDS = 60
 
 
 def startKatagoProcess():
@@ -22,6 +29,13 @@ def startKatagoProcess():
 KATAGO_PROCESS = startKatagoProcess()
 
 LOCK = threading.Lock()
+
+
+def readLineWithTimeout(process, timeout_seconds):
+    ready, _, _ = select.select([process.stdout], [], [], timeout_seconds)
+    if not ready:
+        return None
+    return process.stdout.readline()
 
 
 def queryKatago(query):
@@ -49,7 +63,16 @@ def queryKatago(query):
     results = {}
 
     while len(results) < expected:
-        line = KATAGO_PROCESS.stdout.readline()
+        line = readLineWithTimeout(KATAGO_PROCESS, KATAGO_RESPONSE_TIMEOUT_SECONDS)
+
+        if line is None:
+            # KataGo está vivo (poll() não detecta isso) mas não respondeu
+            # dentro do prazo — mata e reinicia explicitamente, em vez de
+            # travar essa e toda requisição futura (compartilham o LOCK).
+            KATAGO_PROCESS.kill()
+            KATAGO_PROCESS.wait()
+            KATAGO_PROCESS = startKatagoProcess()
+            raise RuntimeError("KataGo não respondeu a tempo; processo reiniciado")
 
         if line == "":
             # stdout fechado (processo morreu durante esta requisição):
